@@ -41,7 +41,7 @@ echo "- - - - - - - -  Installing python kubernetes-client - - - - - - - - - - -
 # Install Kubernetes client
 sudo pip3 install kubernetes
 
-echo "- - - - - - - -  Adding EKS cluster to kubeconfig - - - - - - - - - - - "
+echo "- - - - - - - -  Adding $CLUSTER_NAME EKS cluster to kubeconfig - - - - - - - - - - - "
 # Update kubeconfig
 aws eks update-kubeconfig --name $CLUSTER_NAME
 

@@ -19,9 +19,10 @@ https://docs.aws.amazon.com/cloud9/latest/user-guide/create-environment.html
 ### Run the installation script. ### 
 1. Change variable CLUSTER_NAME to the Scale test EKS cluster in the `installation.sh` file. 
 1. Run the installation script
-```
-./installation.sh
-```
+- ```cd scripts/```
+- ```chmod +x installation.sh``` (Make the script executable)
+- ```./installation.sh``` (Run the installation script)
+
 **Note: This script needs to be run only once before running the scale test to install all the pre-requisite tools required to run the
  tests.**
 
