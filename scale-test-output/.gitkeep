@@ -1,0 +1,4 @@
+# Keep this file to not ignore scale-test-output folder. 
+# All the files inside scale-test-output folder will be ignored by git
+# We need this folder upfront as Locust output files are saved at this filepath and
+# we cannot execute Locust test if this folder doesn't exist.

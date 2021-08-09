@@ -1,4 +1,6 @@
 # amazon-emr-on-eks-scale-test-tool #
+Amazon EMR on EKS Scale Test tool allows users to submit sample/custom Spark jobs at scale to an EMR on EKS Virtual Cluster. 
+Users can customize the job and the job submission rate. The tool summarizes the results of the scale test in a CSV file containing information about every job submitted during test execution.
 
 ## Pre-requisites ##
 

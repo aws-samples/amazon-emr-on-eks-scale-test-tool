@@ -1,7 +1,8 @@
 # Intellij
 .idea/
 *.iml
-# Avoid pushing scale test output
+# Avoid pushing scale test output but keep the gitkeep file
 scale-test-output/*
+!.gitkeep
 # Python
 __pycache__
