@@ -3,13 +3,15 @@
 ## Pre-requisites ##
 
 ### Create a cluster for scale testing ###
-Amazon EKS is a managed service that makes it easy for you to run Kubernetes on AWS without needing to install, operate, and maintain your own Kubernetes control plane or nodes. 
-Follow the steps outlined in this document to create a new Kubernetes cluster with nodes in Amazon EKS.
-https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/setting-up-eks-cluster.html
+you can create a cluster that is configured for scaling by modifying the variables in `scripts/create_cluster_for_scale_test.sh` (eg cluster name and aws region) then running this script.
+You can skip this step if you already have a cluster setup for scale testing. After creating the cluster, take a look 
+at the (optional) additional manual configuration steps described in
+`resources/additional_cluster_configuration_steps.md`. `create_cluster_for_scale_test.sh` uses kubectl
+and eksctl, which can be installed using `installation.sh` (described below)
 
 ### Create Job Execution Role ###
-IAM role Arn to run workloads on Amazon EMR on EKS
 Steps to create Job execution role: https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/creating-job-execution-role.html
+This is not necessary if you created a cluster using the `create_cluster_for_scale_test.sh` script because this script creates a job execution role and prints the ARN to stdout
 
 ### Setup Cloud9 Environment (This step is optional) ###
 
@@ -51,8 +53,8 @@ will also be printed on the console
    - EKS_CLUSTER_NAME
    - AWS REGION 
 1. Set the variables in `scale_test_tool/config/job_config_parameters.py` 
-   - JOB_EXECUTION_ROLE_ARN
-   - Various Job Config Parameters for running a custom job (Default configuration will run sample Spark Pi Job.)
+   - JOB_EXECUTION_ROLE_ARN, CLOUD_WATCH_LOG_GROUP_NAME, S3_LOG_PATH
+   - Optionally, override the various job config parameters in order to have the scale test run your own job. The default configuration will run the example SparkPi Job that is bundled with Spark.
 
 Configure the locust file at path `scale_test_tool/locust/locust.conf`:
 1. Configure ```users``` parameter based on the number of Jobs that should run as a part of scale test.
