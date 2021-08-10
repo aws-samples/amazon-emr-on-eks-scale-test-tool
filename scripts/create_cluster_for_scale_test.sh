@@ -1,15 +1,21 @@
-# this script uses eksctl to create an EKS cluster in a new VPC and configures it so that it can be used for scale
-# testing. There are a few additional but optional manual configuration steps explained in
+# This script uses eksctl to create an EKS cluster in a new VPC and configures it so that it can be used for scale
+# testing. It is highly recommended to read closely this script and its dependent resources in order to understand
+# what it does.
+# This script does the following:
+# - creates a job execution role. The ARN of this role is printed at the end of the script because this ARN needs to be
+#   pasted into job_config_parameters.py
+# - creates an EKS cluster using the configuration in resources/cluster_in_new_VPC.yaml
+# - installs fluent bit on the EKS cluster, which writes all pod logs to cloudwatch logs under 3 log groups with
+#   prefix /aws/containerinsights/${CLUSTER_NAME}. It can be very useful to have all pod logs available in cloudwatch
+#   when doing scale testing. EKS also writes logs of system pods to cloudwatch log group /aws/eks/${CLUSTER_NAME}
+#   more info: https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html
+# - installs cluster-autoscaler
+# - installs kubernetes dashboard
+# - installs dns-autoscaler
+# - installs cni-metrics-helper
+# There are a few additional but optional manual configuration steps explained in
 # additional_cluster_configuration_steps.md.
-# One of the things this script installs on the EKS cluster is fluent bit, which writes all pod logs to cloudwatch
-# logs under 3 log groups with prefix /aws/containerinsights/${CLUSTER_NAME}.
-# EKS also writes logs of system pods to cloudwatch log group
-# /aws/eks/${CLUSTER_NAME} https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html
-# todo
-# - recommendation for reading this closely
-# - note that the execution role will be printed at the end of the script
-# - better list of what the script does
-# - some scripts point to yaml files that are not the latest
+
 set -eu -o pipefail
 
 # change these variables according to your needs ====================================================================
@@ -23,7 +29,7 @@ INSTANCE_SIZE=xlarge
 # script uses this ECR image. If the variable is not set, the script does not modify the fluent bit yaml file, which
 # means the fluent bit image is pulled from Dockerhub (which can result in being throttled if the cluster is scaling up
 # quickly). To put the image in ECR, pull it from Dockerhub then push it to an ECR repo in your AWS account.
-FLUENT_BIT_ECR_IMAGE=
+FLUENT_BIT_ECR_IMAGE_URI=
 # The following are reasonable CNI settings. CNI_MINIMUM_IP_TARGET should be increased if you run scale tests with
 # higher pod density. More info about these settings: https://github.com/aws/amazon-vpc-cni-k8s/blob/master/docs/eni-and-ip-target.md
 # If the subnets created by eksctl still do not provide enough addresses (by default eksctl creates a "/19" subnet which
@@ -47,11 +53,9 @@ aws iam put-role-policy --role-name $EMR_ON_EKS_JOB_EXECUTION_ROLE \
 --policy-name EMR-Containers-Job-Execution \
 --policy-document "file://${BASE_FOLDER}/resources/EMRContainers-JobExecutionRole.json"
 
-
-# create the cluster
 echo "going to create EKS cluster $CLUSTER_NAME"
 sed "s/REGION/$REGION/g; s/MY_CLUSTER_NAME/$CLUSTER_NAME/g; s/INSTANCE_TYPE/$INSTANCE_TYPE/g; s/INSTANCE_SIZE/$INSTANCE_SIZE/g" \
-$BASE_FOLDER/resources/cluster_in_new_VPC.yaml \
+"$BASE_FOLDER"/resources/cluster_in_new_VPC.yaml \
 |  eksctl create cluster -f -
 
 # update trust policy of the IAM role that was just created so that it can be used with all namespaces of this cluster.
@@ -65,8 +69,8 @@ aws emr-containers update-role-trust-policy \
     --region $REGION
 
 echo "going to install cluster autoscaler"
-# install dns-autoscaler. READ THE COMMENTS AT THE TOP OF resources/cluster-autoscaler-autodiscover.yaml
-sed "s/MY_CLUSTER_NAME/$CLUSTER_NAME/g" $BASE_FOLDER/resources/cluster-autoscaler-autodiscover.yaml \
+# READ THE COMMENTS AT THE TOP OF resources/cluster-autoscaler-autodiscover.yaml
+sed "s/MY_CLUSTER_NAME/$CLUSTER_NAME/g" "$BASE_FOLDER"/resources/cluster-autoscaler-autodiscover.yaml \
 | kubectl apply -f -
 
 echo "going to install fluent bit"
@@ -86,24 +90,23 @@ kubectl create configmap fluent-bit-cluster-info \
 --from-literal=read.tail=${FluentBitReadFromTail} \
 --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
 
-if [ -n "${FLUENT_BIT_ECR_IMAGE}" ]; then
-   yq e "select(.kind == \"DaemonSet\" and .metadata.name == \"fluent-bit\").spec.template.spec.containers.[].image |= \"${FLUENT_BIT_ECR_IMAGE}\"" $BASE_FOLDER/resources/fluent-bit.yaml \
+if [ -n "${FLUENT_BIT_ECR_IMAGE_URI}" ]; then
+   yq e "select(.kind == \"DaemonSet\" and .metadata.name == \"fluent-bit\").spec.template.spec.containers.[].image |= \"${FLUENT_BIT_ECR_IMAGE_URI}\"" "$BASE_FOLDER"/resources/fluent-bit.yaml \
    | kubectl apply -f -
 else
-   kubectl apply -f $BASE_FOLDER/resources/fluent-bit.yaml
+   kubectl apply -f "$BASE_FOLDER"/resources/fluent-bit.yaml
 fi
 
 echo "going to install dns autoscaler"
-# install dns-autoscaler. READ THE COMMENTS AT THE TOP OF resources/dns-horizontal-autoscaler.yaml
-kubectl apply -f $BASE_FOLDER/resources/dns-horizontal-autoscaler.yaml
+# READ THE COMMENTS AT THE TOP OF resources/dns-horizontal-autoscaler.yaml
+kubectl apply -f "$BASE_FOLDER"/resources/dns-horizontal-autoscaler.yaml
 
 echo "going to install kubernetes dashboard"
-# install kubernetes dashboard
 # instructions for viewing the dashboard in your browser: https://docs.aws.amazon.com/eks/latest/userguide/dashboard-tutorial.html
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.5/aio/deploy/recommended.yaml
 
 echo "going to install cni metrics helper"
-# install CNI metrics helper, which sends to cloudwatch metrics about IP address usage, ENI usage, and CNI errors
+# CNI metrics helper sends to cloudwatch metrics about IP address usage, ENI usage, and CNI errors
 # https://docs.aws.amazon.com/eks/latest/userguide/cni-metrics-helper.html
 # Note: the metrics published to cloudwatch will have a dimension called CLUSTER_ID whose value includes--in addition
 # to the cluster name--the name of the nodegroup of the node that the cni-metrics-helper deployment is running on.
