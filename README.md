@@ -11,7 +11,8 @@ and eksctl, which can be installed using `installation.sh` (described below)
 
 ### Create Job Execution Role ###
 Steps to create Job execution role: https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/creating-job-execution-role.html
-This is not necessary if you created a cluster using the `create_cluster_for_scale_test.sh` script because this script creates a job execution role and prints the ARN to stdout
+This is not necessary if you created a cluster using the `create_cluster_for_scale_test.sh` script because this script creates a job execution role and prints the ARN to stdout.
+If you need to add permissions to the job execution role created by `create_cluster_for_scale_test.sh`, add the permissions to `resources/EMRContainers-JobExecutionRole.json`
 
 ### Setup Cloud9 Environment (This step is optional) ###
 

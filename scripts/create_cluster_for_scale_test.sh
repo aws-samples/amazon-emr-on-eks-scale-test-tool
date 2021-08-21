@@ -9,6 +9,8 @@
 #   prefix /aws/containerinsights/${CLUSTER_NAME}. It can be very useful to have all pod logs available in cloudwatch
 #   when doing scale testing. EKS also writes logs of system pods to cloudwatch log group /aws/eks/${CLUSTER_NAME}
 #   more info: https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html
+#   If you want to collect metrics for resources such as CPU, memory, disk, and network, follow these steps for setting
+#   up Container Insights: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html
 # - installs cluster-autoscaler
 # - installs kubernetes dashboard
 # - installs dns-autoscaler
