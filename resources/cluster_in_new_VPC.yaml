@@ -1,0 +1,126 @@
+# notes:
+# - create_cluster_for_scale_test.sh replaces MY_CLUSTER_NAME, REGION, INSTANCE_TYPE, INSTANCE_SIZE with the configured
+#   values
+
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: MY_CLUSTER_NAME
+  region: REGION
+  version: "1.21"
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+  - metadata:
+      name: cluster-autoscaler
+      namespace: kube-system
+    wellKnownPolicies:
+      autoScaler: true
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+
+nodeGroups:
+  - name: ng-INSTANCE_TYPE-INSTANCE_SIZE-1a
+    privateNetworking: true # if only 'Private' subnets are given, this must be enabled
+    labels: { nodegroup-label: ng-INSTANCE_TYPE-INSTANCE_SIZE-1a }
+    instanceType: INSTANCE_TYPE.INSTANCE_SIZE
+    minSize: 1
+    maxSize: 1000
+    desiredCapacity: 1
+    volumeSize: 100
+    availabilityZones: ["REGIONa"]
+    asgMetricsCollection:
+      - granularity: 1Minute
+        metrics: # note this is not the full set of ASG metrics that can be collected
+          - GroupDesiredCapacity
+          - GroupInServiceInstances
+          - GroupPendingInstances
+          - GroupStandbyInstances
+          - GroupTerminatingInstances
+          - GroupTotalInstances
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true" # required for autoscaler autodiscovery to work
+      k8s.io/cluster-autoscaler/MY_CLUSTER_NAME: "owned" # required for autoscaler autodiscovery to work
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+    preBootstrapCommands:
+      # install ssm agent
+      - yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+  - name: ng-INSTANCE_TYPE-INSTANCE_SIZE-1b
+    privateNetworking: true # if only 'Private' subnets are given, this must be enabled
+    labels: { nodegroup-label: ng-INSTANCE_TYPE-INSTANCE_SIZE-1b } # this allows you to schedule spark jobs on specific nodegroups
+    instanceType: INSTANCE_TYPE.INSTANCE_SIZE
+    minSize: 1
+    maxSize: 1000
+    desiredCapacity: 1
+    volumeSize: 100
+    availabilityZones: ["REGIONb"]
+    asgMetricsCollection:
+      - granularity: 1Minute
+        metrics: # note this is not the full set of ASG metrics that can be collected
+          - GroupDesiredCapacity
+          - GroupInServiceInstances
+          - GroupPendingInstances
+          - GroupStandbyInstances
+          - GroupTerminatingInstances
+          - GroupTotalInstances
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true" # required for autoscaler autodiscovery to work
+      k8s.io/cluster-autoscaler/MY_CLUSTER_NAME: "owned" # required for autoscaler autodiscovery to work
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+    preBootstrapCommands:
+      # install ssm agent
+      - yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+  - name: ng-INSTANCE_TYPE-INSTANCE_SIZE-1c
+    privateNetworking: true # if only 'Private' subnets are given, this must be enabled
+    labels: { nodegroup-label: ng-INSTANCE_TYPE-INSTANCE_SIZE-1c }
+    instanceType: INSTANCE_TYPE.INSTANCE_SIZE
+    minSize: 1
+    maxSize: 1000
+    desiredCapacity: 1
+    volumeSize: 100
+    availabilityZones: ["REGIONc"]
+    asgMetricsCollection:
+      - granularity: 1Minute
+        metrics: # note this is not the full set of ASG metrics that can be collected
+          - GroupDesiredCapacity
+          - GroupInServiceInstances
+          - GroupPendingInstances
+          - GroupStandbyInstances
+          - GroupTerminatingInstances
+          - GroupTotalInstances
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true" # required for autoscaler autodiscovery to work
+      k8s.io/cluster-autoscaler/MY_CLUSTER_NAME: "owned" # required for autoscaler autodiscovery to work
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+    preBootstrapCommands:
+      # install ssm agent
+      - yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
